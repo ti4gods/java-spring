@@ -57,14 +57,25 @@ public class TaskController {
 
     // http?//localhost:8080/tasks/51516156-dsdff-55616
     @PutMapping("/{id}")
-    public TaskModel update(@RequestBody TaskModel taskModel, HttpServletRequest request, @PathVariable UUID id) {
-        var taks = this.taskRepository.findById(id).orElse(null);
+    public ResponseEntity update(@RequestBody TaskModel taskModel, HttpServletRequest request, @PathVariable UUID id) {
+        var task = this.taskRepository.findById(id).orElse(null);
+
+        if (task == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tarefa não encontrada");
+        }
+
+        var idUser = request.getAttribute("idUser");
+        if (!task.getIdUser().equals(idUser)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Usuário não tem permissão para alterar essa tarefa");
+        }
         
         // Converte as propriedades nulas, ou seja, caso seja alterado apenas 1 propriedade no PUT
         // será retornado json com todos os demais atributos populados
-        Utils.copyNonNullProperties(taskModel, taks);
+        Utils.copyNonNullProperties(taskModel, task);
 
-        return this.taskRepository.save(taks);
+        
+        var taskUpdated = this.taskRepository.save(task);
+        return ResponseEntity.ok().body(taskUpdated);
     }
 
 }
